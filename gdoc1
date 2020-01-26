@@ -1,0 +1,38 @@
+#!groovy
+
+pipeline {
+    agent none
+    stages {
+        stage('Project-Build') { 
+                   agent {
+                     docker {
+                         image 'maven:3.5.3' 
+                            }
+                         }
+                 steps {
+                     sh 'mvn -B -DskipTests clean install package' 
+                       }
+            }
+        stage('Docker-Image-Build') {
+            agent any
+            steps {
+                sh 'docker build -t  divyaprabha28/selenium:v1 .'
+                  }
+            }
+        stage('Docker-Image-Push') {
+            agent any
+            steps {
+                withCredentials([usernamePassword(credentialsId: '72274943-50a0-4f1f-83e9-b2bb96708a7d', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
+                sh 'docker push divyaprabha28/selenium:v1'
+                  }
+            }
+        }
+        stage('Docker-Run') {
+             agent any
+             steps {
+                 sh 'docker run divyaprabha28/selenium:v1'
+                 }
+                }
+            }
+    }
